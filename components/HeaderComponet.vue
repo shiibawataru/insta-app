@@ -1,23 +1,43 @@
 <template>
-  <div class="p-4 bg-white">
-    <div class="w-full flex">
+  <div :class="{ overlay: deleteModal }" class="p-4 bg-white">
+    <!-- 各ページに合わせたユーザーネームの表示 -->
+    <div
+      v-if="
+        $route.path.includes('/userPage') ||
+        $route.path.includes('/followFollower')
+      "
+      class="text-center absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11/12 font-semibold"
+      :v-on="getUserName()"
+    >
+      {{ displayUserName }}
+    </div>
+    <!-- ここまで -->
+    <!-- Likes、Activity タイトル -->
+    <div
+      v-if="$route.path.includes('/likesList') || $route.path === '/activity'"
+      class="text-center absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11/12 font-semibold"
+    >
+      <h2 v-if="$route.path.includes('/likesList')">Likes</h2>
+      <h2 v-if="$route.path === '/activity'">Activity</h2>
+    </div>
+    <div
+      class="flex justify-between absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-11/12"
+    >
       <div>
         <nuxt-link
-          v-if="$route.path === '/Home' || $route.path === '/Search'"
-          to="/Home"
+          v-if="$route.path === '/home' || $route.path === '/search'"
+          to="/home"
         >
           <!-- 後で変更 -->
-          <p class="font-serif">instagram</p>
+          <img src="../static/images/logo.png" class="h-10 w-auto" />
         </nuxt-link>
         <nuxt-link
           v-if="
             $route.path === '/addPost' ||
-            $route.path === '/Mypage' ||
-            $route.path.includes('/userPage') ||
-            $route.path === '/Setting' ||
-            $route.path.includes('/FollowFollower')
+            $route.path === '/mypage' ||
+            $route.path === '/setting'
           "
-          to="/Mypage"
+          to="/mypage"
           class="font-bold"
         >
           {{ userName }}
@@ -28,7 +48,9 @@
           v-if="
             $route.path.includes('/likesList') ||
             $route.path.includes('/postDetail') ||
-            $route.path === '/activity'
+            $route.path === '/activity' ||
+            $route.path.includes('/userPage') ||
+            $route.path.includes('/followFollower')
           "
           class="mr-4"
           @click="$router.go(-1)"
@@ -36,38 +58,27 @@
           <i class="fas fa-chevron-left"></i>
         </button>
       </div>
-
-      <!-- Likes、Activity タイトル -->
-      <div
-        v-if="$route.path.includes('/likesList') || $route.path === '/activity'"
-        class="w-full text-right text-lg font-semibold"
-      >
-        <h2 v-if="$route.path.includes('/likesList')">Likes</h2>
-        <h2 v-if="$route.path === '/activity'">Activity</h2>
-      </div>
-      <div class="w-full text-right">
+      <div class="text-right flex items-center justify-between w-2/12">
         <!-- 投稿アイコン -->
         <nuxt-link
           v-if="
             $route.path === '/addPost' ||
-            $route.path === '/Mypage' ||
+            $route.path === '/mypage' ||
             $route.path.includes('/userPage') ||
-            $route.path === '/Home' ||
-            $route.path === '/Search' ||
+            $route.path === '/home' ||
+            $route.path === '/search' ||
             $route.path === '/activity' ||
             $route.path.toLowerCase().includes('/postdetail') ||
-            $route.path.includes('/FollowFollower')
+            $route.path.includes('/followFollower')
           "
           to="/addPost"
-          class="mr-4"
         >
           <i class="far fa-plus-square fa-lg fa-fw"></i>
         </nuxt-link>
         <!-- 通知アイコン -->
         <nuxt-link
-          v-if="$route.path === '/Home' || $route.path === '/Search'"
+          v-if="$route.path === '/home' || $route.path === '/search'"
           to="/activity"
-          class="mr-4"
         >
           <i class="far fa-heart fa-lg fa-fw relative">
             <!-- まだ通知を確認していないときの点滅アイコン -->
@@ -87,14 +98,13 @@
         <nuxt-link
           v-if="
             $route.path === '/addPost' ||
-            $route.path === '/Mypage' ||
+            $route.path === '/mypage' ||
             $route.path.includes('/userPage') ||
             $route.path === '/activity' ||
-            $route.path.includes('/FollowFollower') ||
+            $route.path.includes('/followFollower') ||
             $route.path.toLowerCase().includes('/postDetail')
           "
-          to="/Setting"
-          class="mr-4"
+          to="/setting"
         >
           <i class="fas fa-cog fa-lg fa-fw"></i>
         </nuxt-link>
@@ -111,6 +121,13 @@ export default Vue.extend({
   props: {
     giveNotice: { type: Boolean, required: true },
   },
+
+  data() {
+    return {
+      displayUserName: '',
+    }
+  },
+
   computed: {
     /**
      * ログインしているユーザー名を取得する
@@ -118,6 +135,7 @@ export default Vue.extend({
     userName(): string {
       return this.$store.getters['user/getLoginUserName']
     },
+
     /**
      * 親から最新の通知を受け取ってそれが確認済みの場合はtrue,していない場合はfalseを渡す.
      */
@@ -128,8 +146,39 @@ export default Vue.extend({
         return true
       }
     },
+    deleteModal(): boolean {
+      return this.$store.getters['modal/getDeleteModalStatus']
+    },
+  },
+  created() {
+    // ヘッダーフッターからoverlayを外す
+    this.$store.commit('modal/modalOff')
+  },
+  methods: {
+    async getUserName() {
+      const userId = this.$route.params.id
+      const response = await this.$axios.$get(
+        `https://api-instagram-app.herokuapp.com/mypage/${userId}`
+      )
+      this.displayUserName = response.user.userName
+    },
   },
 })
 </script>
 
-<style></style>
+<style lang="scss" scoped>
+.overlay {
+  animation: fade 0.3s ease-out forwards;
+}
+@keyframes fade {
+  0% {
+    background: white;
+  }
+  50% {
+    background: #e6e6e6;
+  }
+  100% {
+    background: #cccccc;
+  }
+}
+</style>

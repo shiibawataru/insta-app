@@ -1,8 +1,8 @@
 <template>
-  <div class="content-center px-4 py-8">
-    <div class="flex justify-center mt-16">
-      <!-- 仮logo -->
-      <img src="https://svgsilh.com/svg/1594387.svg" alt="" width="200" />
+  <div class="content-center px-4">
+    <div class="flex justify-center pb-4">
+      <!-- logo -->
+      <img src="../static/images/logo.png" alt="ロゴ" width="200" />
     </div>
     <!-- input -->
     <div class="my-4 text-xl">
@@ -72,6 +72,11 @@ export default Vue.extend({
       errorSignup: '',
     }
   },
+  head(): any {
+    return {
+      title: `${this.$route.name} - Zipangram`,
+    }
+  },
   methods: {
     /**
      * ユーザー登録する.
@@ -85,6 +90,14 @@ export default Vue.extend({
       // エラーチェック
       if (this.userName === '') {
         this.errorUsername = 'ユーザー名を入力してください'
+        this.hasError = true
+      }
+      if (this.userName.length > 30) {
+        this.errorUsername = 'ユーザー名は30字以内で入力してください'
+        this.hasError = true
+      }
+      if (!/^[a-zA-Z0-9!-/:-@¥[-`{-~]*$/.test(this.userName)) {
+        this.errorUsername = 'ユーザー名は半角英数記号で入力してください'
         this.hasError = true
       }
       if (
@@ -113,7 +126,7 @@ export default Vue.extend({
           Auth.login(this.$cookies, token)
 
           // ホーム画面に遷移
-          await this.$router.push('/Home')
+          await this.$router.push('/home')
           // 登録失敗時
         } else if (res.data.status === 'error') {
           this.errorSignup = 'そのユーザー名は既に登録済みです'

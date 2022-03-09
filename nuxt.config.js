@@ -1,9 +1,10 @@
+import TerserPlugin from 'terser-webpack-plugin'
 export default {
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
-    title: 'insta-app',
+    title: 'Zipangram',
     htmlAttrs: {
-      lang: 'en',
+      lang: 'ja',
     },
     meta: [
       { charset: 'utf-8' },
@@ -13,6 +14,12 @@ export default {
     ],
     link: [
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
+      // iOS用のアイコン
+      {
+        rel: 'apple-touch-icon',
+        type: 'image/png',
+        href: '/apple-touch-icon.png',
+      },
       // fontAwesome icon CDN
       {
         rel: 'stylesheet',
@@ -32,6 +39,10 @@ export default {
   // Global CSS: https://go.nuxtjs.dev/config-css
   css: [],
 
+  // Netlify デプロイのため
+  ssr: true,
+  target: 'static',
+
   // Plugins to run before rendering page: https://go.nuxtjs.dev/config-plugins
   plugins: [
     { src: '~/plugins/vue-cropper', mode: 'client' },
@@ -39,6 +50,7 @@ export default {
     { src: '~/plugins/amCharts.js', mode: 'client' },
     { src: '~/plugins/persistedstate.js', mode: 'client' },
     { src: '~/plugins/swiper', mode: 'client' },
+    // { src: '~/plugins/skelton', mode: 'client' },
   ],
 
   // Auto import components: https://go.nuxtjs.dev/config-components
@@ -69,6 +81,15 @@ export default {
   build: {
     transpile: ['amCharts'],
     vendor: ['vue-cropperjs'],
+    optimization: {
+      minimize: true,
+      minimizer: [
+        new TerserPlugin({
+          cache: true,
+          parallel: false,
+        }),
+      ],
+    },
   },
   // ローディング
   loading: '~/components/Loading.vue',

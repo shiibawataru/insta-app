@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto mt-10">
+  <div class="container mx-auto">
     <div class="flex justify-center grid grid-cols-6 gap-1 mb-4 mx-2">
       <!-- image -->
       <div
@@ -63,16 +63,16 @@
                   :aspect-ratio="1"
                 >
                 </vue-cropper>
-                <div>
+                <div class="mt-4">
                   <button
-                    class="inline-flex justify-center py-2 px-4 text-xl text-dark-gray"
+                    class="inline-flex justify-center py-2 px-4 text-xl text-dark-gray font-semibold"
                     type="button"
                     @click="hideImageModal"
                   >
                     Cancel
                   </button>
                   <button
-                    class="inline-flex justify-center py-2 px-4 text-xl text-accent-color"
+                    class="inline-flex justify-center py-2 px-4 text-xl text-accent-color font-semibold"
                     type="button"
                     @click="cropImage"
                   >
@@ -162,21 +162,20 @@
               name="prefecture-modal"
               :click-to-close="false"
               width="300px"
-              height="400px"
+              height="auto"
             >
-              <div class="modal-body my-8 flex flex-col">
+              <div class="modal-body my-4 flex flex-col">
                 <SelectPrefecture @givePrefecture="catchPrefecture" />
-
-                <div>
+                <div class="mt-4">
                   <button
-                    class="inline-flex justify-center py-2 px-4 text-xl text-dark-gray"
+                    class="inline-flex justify-center py-2 px-4 text-xl text-dark-gray font-semibold"
                     type="button"
                     @click="hidePrefectureModal"
                   >
                     Cancel
                   </button>
                   <button
-                    class="inline-flex justify-center py-2 px-4 text-xl text-accent-color"
+                    class="inline-flex justify-center py-2 px-4 text-xl text-accent-color font-semibold"
                     type="button"
                     @click="addPrefecture"
                   >
@@ -198,7 +197,7 @@
       </div>
     </div>
     <!-- caption -->
-    <div class="mx-2 text-sm">
+    <div class="mx-2">
       <textarea
         v-model="caption"
         rows="5"
@@ -213,13 +212,13 @@
     <div class="px-4 py-3 text-center mt-2">
       <button
         type="button"
-        class="inline-flex justify-center py-2 px-4 text-xl text-dark-gray"
+        class="inline-flex justify-center py-2 px-4 text-xl text-dark-gray font-semibold"
         @click="cancel"
       >
         Cancel
       </button>
       <button
-        class="inline-flex justify-center py-2 px-4 text-xl text-accent-color"
+        class="inline-flex justify-center py-2 px-4 text-xl text-accent-color font-semibold"
         type="button"
         @click="submit"
       >
@@ -231,8 +230,8 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import imageCompression from 'browser-image-compression'
 import SelectPrefecture from '~/components/SelectPrefecture.vue'
-
 export default Vue.extend({
   components: { SelectPrefecture },
   middleware: 'auth',
@@ -266,29 +265,30 @@ export default Vue.extend({
     }
   },
 
+  head(): any {
+    return {
+      title: `${this.$route.name} - Zipangram`,
+    }
+  },
+
   methods: {
     /**
      * 画像を選択し、添付する.
      * @param e - 添付ファイル
      */
     fileSelected(e: any): void {
+      // ファイル数が5枚以上の場合のエラー
+      if (this.cropImageFiles.length > 4) {
+        this.errorImage = '画像枚数は5枚以下にしてください'
+        return
+      }
       const file = e.target.files[0]
       if (file) {
-        // ファイル数が4枚以上の場合のエラー
-        if (this.cropImageFiles.length > 4) {
-          this.errorImage = '画像枚数は4枚以下にしてください'
-          return
-        }
-        // ファイル形式が画像以外の場合のエラー
-        // if (!file.type.includes('image/')) {
-        //   this.errorImage = '画像ファイルを選択してください'
-        //   return
-        // }
-        // 制限サイズ(3MB)
-        const sizeLimit = 1024 * 1024 * 3
+        // 制限サイズ(5MB)
+        const sizeLimit = 1024 * 1024 * 5
         // ファイルサイズが制限以上の場合のエラー
         if (file.size > sizeLimit) {
-          this.errorImage = 'ファイルサイズは3MB以下にしてください'
+          this.errorImage = 'ファイルサイズは5MB以下にしてください'
           return
         }
         if (typeof FileReader === 'function') {
@@ -314,7 +314,7 @@ export default Vue.extend({
     /**
      * 画像をトリミングする.
      */
-    cropImage(): void {
+    async cropImage(): Promise<void> {
       if (this.$refs.cropper) {
         const fileData = (this as any).$refs.cropper
           .getCroppedCanvas()
@@ -334,7 +334,15 @@ export default Vue.extend({
         const imageFile = new File([buffer.buffer], fileName, {
           type: fileType,
         })
-        this.cropImageFiles.push(imageFile)
+        // Fileオブジェクトを圧縮
+        const options = {
+          maxSizeMB: 0.1,
+          maxWidthOrHeight: 1200,
+          useWebWorker: true,
+        }
+        const compFile = await imageCompression(imageFile, options)
+
+        this.cropImageFiles.push(compFile)
         // 初期化
         this.selectedImage = ''
         // トリミング後のコードを配列に格納
@@ -377,6 +385,9 @@ export default Vue.extend({
      */
     showPrefectureModal() {
       ;(this as any).$modal.show('prefecture-modal')
+      // 初期化
+      this.selectedPrefecture = { id: '', name: '' }
+      this.showPrefecture = ''
     },
 
     /**
@@ -450,19 +461,20 @@ export default Vue.extend({
       // ローディング終了
       this.$nuxt.$loading.finish()
       // ホーム画面に遷移
-      this.$router.push('/Home')
+      this.$router.push('/home')
     },
 
     /**
      * 投稿をキャンセルしてホーム画面に遷移する.
      */
     cancel() {
-      this.$router.push('/Home')
+      this.$router.push('/home')
     },
     /**
      * 選択した写真を削除する.
      */
     deleteImage(i: number) {
+      this.cropImageFiles.splice(i, 1)
       this.cropImageCodes.splice(i, 1)
       if (i !== 0) {
         this.prev()

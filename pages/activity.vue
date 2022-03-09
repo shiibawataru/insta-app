@@ -25,7 +25,7 @@
           </nuxt-link>
           <!-- いいねのとき -->
           <div v-if="notice.type === 'favorite'" class="p-1 w-[80%]">
-            <nuxt-link :to="'/postdetail/' + notice.contents.postId">
+            <nuxt-link :to="'/postDetail/' + notice.contents.postId">
               <div class="w-full h-full font-body">
                 <strong>
                   {{ notice.contents.newUser.userName }}
@@ -36,7 +36,7 @@
           </div>
           <!-- 新しいコメントのとき -->
           <div v-if="notice.type === 'comment'" class="p-1 w-[80%]">
-            <nuxt-link :to="'/postdetail/' + notice.contents.postId">
+            <nuxt-link :to="'/postDetail/' + notice.contents.postId">
               <div class="w-full h-full font-body">
                 <strong>
                   {{ notice.contents.newUser.userName }}
@@ -75,7 +75,7 @@
           </nuxt-link>
           <!-- いいねのとき -->
           <div v-if="notice.type === 'favorite'" class="p-1 w-[80%]">
-            <nuxt-link :to="'/postdetail/' + notice.contents.postId">
+            <nuxt-link :to="'/postDetail/' + notice.contents.postId">
               <div class="w-full h-full font-body">
                 <strong>
                   {{ notice.contents.newUser.userName }}
@@ -86,7 +86,7 @@
           </div>
           <!-- 新しいコメントのとき -->
           <div v-if="notice.type === 'comment'" class="p-1 w-[80%]">
-            <nuxt-link :to="'/postdetail/' + notice.contents.postId">
+            <nuxt-link :to="'/postDetail/' + notice.contents.postId">
               <div class="w-full h-full font-body">
                 <strong>
                   {{ notice.contents.newUser.userName }}
@@ -127,6 +127,12 @@ export default Vue.extend({
       notices: {} as any,
       loginUserId: Number,
       loading: true,
+    }
+  },
+
+  head(): any {
+    return {
+      title: `${this.$route.name} - Zipangram`,
     }
   },
 

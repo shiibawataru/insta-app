@@ -1,5 +1,5 @@
 <template>
-  <div class="container mx-auto mt-6">
+  <div class="container mx-auto">
     <!-- icon -->
     <div class="grid justify-items-center py-6">
       <img class="h-28 w-28 rounded-full object-cover" :src="icon" />
@@ -7,7 +7,7 @@
         {{ errorIcon }}
       </span>
       <label for="file-upload" class="cursor-pointer rounded-md px-4">
-        <span class="text-xl text-accent-color">
+        <span class="text-xl text-accent-color font-semibold">
           Change Profile Photo
           <input
             id="file-upload"
@@ -20,10 +20,10 @@
       </label>
     </div>
     <!-- input -->
-    <div class="grid grid-cols-4 gap-2 border-t border-light-gray px-4 py-8">
+    <div class="grid grid-cols-3 gap-2 border-t border-light-gray px-3 pt-8">
       <div class="col-span-1 py-2">User Name</div>
       <div
-        class="col-span-3 border-b border-light-gray text-input-value-color py-2 pl-2"
+        class="col-span-2 border-b border-light-gray text-input-value-color py-2"
       >
         <input
           v-model="userName"
@@ -31,31 +31,35 @@
           class="appearance-none border-none w-full focus:outline-none"
         />
       </div>
-      <div class="col-start-2 col-span-3 text-sm pl-2 h-6 text-warning-color">
+      <div class="col-start-2 col-span-3 text-sm h-6 text-warning-color">
         {{ errorUserName }}
       </div>
       <div class="col-span-1 py-2">Bio</div>
       <div
-        class="col-span-3 border-b border-light-gray text-input-value-color py-2 pl-2"
+        class="col-span-2 border-b border-light-gray text-input-value-color py-2"
       >
         <input
           v-model="bio"
           type="text"
           class="appearance-none border-none w-full focus:outline-none"
+          maxlength="30"
         />
       </div>
+    </div>
+    <div class="mt-1 mx-4 pb-8">
+      <p class="text-right text-input-value-color">{{ bio.length }}/30</p>
     </div>
     <!-- button -->
     <div class="px-4 pb-4 text-center mt-2">
       <button
         type="button"
-        class="inline-flex justify-center py-2 px-4 text-xl text-dark-gray"
+        class="inline-flex justify-center py-2 px-4 text-xl text-dark-gray font-semibold"
         @click="cancel"
       >
         Cancel
       </button>
       <button
-        class="inline-flex justify-center py-2 px-4 text-xl text-accent-color"
+        class="inline-flex justify-center py-2 px-4 text-xl text-accent-color font-semibold"
         type="button"
         @click="updateUserInfo"
       >
@@ -65,7 +69,7 @@
     <!-- logout -->
     <div class="grid justify-items-center border-t border-light-gray py-8">
       <button
-        class="inline-flex justify-center py-2 px-4 text-xl text-warning-color"
+        class="inline-flex justify-center py-2 px-4 text-xl text-warning-color font-semibold"
         @click="logout"
       >
         Log out
@@ -76,10 +80,12 @@
 
 <script lang="ts">
 import Vue from 'vue'
+import imageCompression from 'browser-image-compression'
 import Auth from '../plugins/auth'
 
 export default Vue.extend({
   middleware: 'auth',
+
   data() {
     return {
       // アイコンのURL
@@ -98,6 +104,11 @@ export default Vue.extend({
       imageUrl: '',
       // S3に送信する削除するアイコンURL
       deleteIcon: '',
+    }
+  },
+  head(): any {
+    return {
+      title: `${this.$route.name} - Zipangram`,
     }
   },
   /**
@@ -126,20 +137,27 @@ export default Vue.extend({
      * 新しいアイコン画像に入れ替える.
      * @param e - 添付ファイル
      */
-    fileSelected(e: any): void {
+    async fileSelected(e: any): Promise<void> {
       this.errorIcon = ''
       const file = e.target.files[0]
       if (file) {
-        // 制限サイズ(3MB)
-        const sizeLimit = 1024 * 1024 * 3
+        // 制限サイズ(5MB)
+        const sizeLimit = 1024 * 1024 * 5
         // ファイルサイズが制限以上の場合のエラー
         if (file.size > sizeLimit) {
-          this.errorIcon = 'ファイルサイズは3MB以下にしてください'
+          this.errorIcon = 'ファイルサイズは5MB以下にしてください'
           return
         }
-
         this.icon = window.URL.createObjectURL(file)
-        this.iconFile = file
+
+        // Fileオブジェクトを圧縮
+        const options = {
+          maxSizeMB: 0.1,
+          maxWidthOrHeight: 1200,
+          useWebWorker: true,
+        }
+        const compFile = await imageCompression(file, options)
+        this.iconFile = compFile
       }
     },
     /**
@@ -149,6 +167,14 @@ export default Vue.extend({
       // ユーザー名空欄チェック
       if (this.userName.length === 0) {
         this.errorUserName = 'ユーザー名を入力してください'
+        return
+      }
+      if (this.userName.length > 30) {
+        this.errorUserName = 'ユーザー名は30字以内で入力してください'
+        return
+      }
+      if (!/^[a-zA-Z0-9!-/:-@¥[-`{-~]*$/.test(this.userName)) {
+        this.errorUserName = '半角英数記号で入力してください'
         return
       }
       // ローディング開始
@@ -194,7 +220,7 @@ export default Vue.extend({
       if (res.data.status === 'success') {
         // ユーザー情報をVuexに保管
         await this.$store.commit('user/setLoginUserInfo', res.data.data)
-        await this.showUserInfo()
+        this.$router.push('/mypage')
         // 変更失敗時
       } else if (res.data.status === 'error') {
         this.errorUserName = 'そのユーザー名は既に使われています'
@@ -204,7 +230,7 @@ export default Vue.extend({
      * 変更をキャンセルしマイページ画面に遷移する.
      */
     cancel() {
-      this.$router.push('/Mypage')
+      this.$router.push('/mypage')
     },
     /**
      * ログアウトしてログイン画面に遷移する.

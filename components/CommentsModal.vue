@@ -15,17 +15,17 @@
         <div>
           <div class="flex">
             <div>
-              <nuxt-link :to="'/UserPage/' + comment.userId">
+              <button type="button" @click="jumpUserPage(comment.userId)">
                 <img
                   :src="comment.userIconUrl"
                   alt=""
                   class="h-6 w-6 rounded-full object-cover"
                 />
-              </nuxt-link>
+              </button>
             </div>
-            <nuxt-link :to="'/UserPage/' + comment.userId">
+            <button type="button" @click="jumpUserPage(comment.userId)">
               <div class="ml-2">{{ comment.userName }}</div>
-            </nuxt-link>
+            </button>
           </div>
           <div class="c-comment font-light p-px pb-0">
             {{ comment.comment }}
@@ -54,12 +54,14 @@
             v-model="inputComment"
             class="appearance-none bg-gray-100 border-none focus:outline-none px-2 w-10/12"
             type="text"
+            :disabled="btnActive"
             @keydown.enter="addCommentByEnter"
           />
 
           <button
             type="button"
             class="text-accent-color content-center"
+            :disabled="btnActive"
             @click="addComment()"
           >
             Post
@@ -101,6 +103,8 @@ export default Vue.extend({
       errorMsg: '',
       // ログインユーザー
       loginUserId: 0,
+      // ボタンの無効化
+      btnActive: false,
 
       // 現在の投稿のコメント一覧
       // eslint-disable-next-line no-array-constructor
@@ -132,7 +136,8 @@ export default Vue.extend({
         this.errorMsg = 'コメントを入力してください'
         return
       }
-
+      // ボタン無効化
+      this.btnActive = true
       // コメントをAPIにpost
       const LOGIN_USER_ID = this.$store.getters['user/getLoginUserId']
 
@@ -148,8 +153,12 @@ export default Vue.extend({
         // コメント入力欄初期化
         this.inputComment = ''
         // コメント一覧初期化と更新
+        this.errorMsg = ''
         this.commentList = []
         this.getComment()
+
+        // ボタン有効化
+        this.btnActive = false
       }
     },
 
@@ -166,6 +175,9 @@ export default Vue.extend({
         return
       }
 
+      // ボタン無効化
+      this.btnActive = true
+
       // コメントをAPIにpost
       const LOGIN_USER_ID = this.$store.getters['user/getLoginUserId']
 
@@ -181,8 +193,12 @@ export default Vue.extend({
         // コメント入力欄初期化
         this.inputComment = ''
         // コメント一覧初期化と更新
+        this.errorMsg = ''
         this.commentList = []
         this.getComment()
+
+        // ボタン有効化
+        this.btnActive = false
       }
     },
 
@@ -226,6 +242,18 @@ export default Vue.extend({
       // コメント一覧初期化と更新
       this.commentList = []
       this.getComment()
+    },
+    /**
+     * リンク先が自分のプロフィールの場合とリンク先を分ける.
+     *
+     * @param targetId - リンク先のユーザーid
+     */
+    jumpUserPage(targetId: number) {
+      if (this.loginUserId === targetId) {
+        this.$router.push('/mypage')
+      } else {
+        this.$router.push('/userPage/' + targetId)
+      }
     },
   },
 })
